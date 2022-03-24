@@ -99,8 +99,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/filterBarContainer"
-        tools:listitem="@layout/item_restaurant"
-        tools:visibility="gone" />
+        tools:listitem="@layout/item_restaurant" />
 
     <!-- Shadow below toolbar -->
 
@@ -115,8 +114,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/filterBarContainer"
-        tools:ignore="UseCompoundDrawables"
-        tools:visibility="visible">
+        tools:ignore="UseCompoundDrawables">
 
         <ImageView
             style="@style/AppTheme.PizzaGuy"
