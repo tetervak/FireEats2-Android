@@ -1,6 +1,7 @@
 package ca.tetervak.fireeats2
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,6 +10,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.text.HtmlCompat
@@ -46,6 +48,8 @@ class MainFragment : Fragment(),
     lateinit var adapter: RestaurantAdapter
 
     private lateinit var viewModel: MainActivityViewModel
+
+    private lateinit var signInLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         setHasOptionsMenu(true)
@@ -100,8 +104,12 @@ class MainFragment : Fragment(),
         binding.buttonClearFilter.setOnClickListener { onClearFilterClicked() }
     }
 
-    public override fun onStart() {
+    override fun onStart() {
         super.onStart()
+
+        signInLauncher = requireActivity().registerForActivityResult(
+            FirebaseAuthUIActivityResultContract()
+        ) { result -> this.onSignInResult(result)}
 
         // Start sign in if necessary
         if (shouldStartSignIn()) {
@@ -116,7 +124,7 @@ class MainFragment : Fragment(),
         adapter.startListening()
     }
 
-    public override fun onStop() {
+    override fun onStop() {
         super.onStop()
         adapter.stopListening()
     }
@@ -216,10 +224,6 @@ class MainFragment : Fragment(),
 
     private fun startSignIn() {
         // Sign in with FirebaseUI
-        val signInLauncher = requireActivity().registerForActivityResult(
-            FirebaseAuthUIActivityResultContract()
-        ) { result -> this.onSignInResult(result)}
-
         val intent = AuthUI.getInstance().createSignInIntentBuilder()
                 .setAvailableProviders(listOf(AuthUI.IdpConfig.EmailBuilder().build()))
                 .setIsSmartLockEnabled(false)
