@@ -1,6 +1,7 @@
 package ca.tetervak.fireeats2
 
 import android.app.Activity
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -103,12 +104,6 @@ class MainFragment : Fragment(),
     public override fun onStart() {
         super.onStart()
 
-        // Start sign in if necessary
-        if (shouldStartSignIn()) {
-            startSignIn()
-            return
-        }
-
         // Apply filters
         onFilter(viewModel.filters)
 
@@ -126,32 +121,32 @@ class MainFragment : Fragment(),
         return super.onCreateOptionsMenu(menu, inflater)
     }
 
+
+    interface SignInProvider{
+       fun startSignIn()
+    }
+    var signInProvider: SignInProvider? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+
+        if(context is SignInProvider){
+            signInProvider = context
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_add_items -> onAddItemsClicked()
             R.id.menu_sign_out -> {
                 AuthUI.getInstance().signOut(requireContext())
-                startSignIn()
+                signInProvider?.startSignIn()
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        val response = result.idpResponse
-        viewModel.isSigningIn = false
 
-        if (result.resultCode != Activity.RESULT_OK) {
-            if (response == null) {
-                // User pressed the back button.
-                requireActivity().finish()
-            } else if (response.error != null && response.error!!.errorCode == ErrorCodes.NO_NETWORK) {
-                showSignInErrorDialog(R.string.message_no_network)
-            } else {
-                showSignInErrorDialog(R.string.message_unknown)
-            }
-        }
-    }
 
     private fun onFilterClicked() {
         // Show the dialog containing filter options
@@ -210,24 +205,8 @@ class MainFragment : Fragment(),
         viewModel.filters = filters
     }
 
-    private fun shouldStartSignIn(): Boolean {
-        return !viewModel.isSigningIn && Firebase.auth.currentUser == null
-    }
 
-    private fun startSignIn() {
-        // Sign in with FirebaseUI
-        val signInLauncher = requireActivity().registerForActivityResult(
-            FirebaseAuthUIActivityResultContract()
-        ) { result -> this.onSignInResult(result)}
 
-        val intent = AuthUI.getInstance().createSignInIntentBuilder()
-                .setAvailableProviders(listOf(AuthUI.IdpConfig.EmailBuilder().build()))
-                .setIsSmartLockEnabled(false)
-                .build()
-
-        signInLauncher.launch(intent)
-        viewModel.isSigningIn = true
-    }
 
     private fun onAddItemsClicked() {
         // Add a bunch of random restaurants
@@ -258,16 +237,7 @@ class MainFragment : Fragment(),
         }
     }
 
-    private fun showSignInErrorDialog(@StringRes message: Int) {
-        val dialog = AlertDialog.Builder(requireContext())
-                .setTitle(R.string.title_sign_in_error)
-                .setMessage(message)
-                .setCancelable(false)
-                .setPositiveButton(R.string.option_retry) { _, _ -> startSignIn() }
-                .setNegativeButton(R.string.option_exit) { _, _ -> requireActivity().finish() }.create()
 
-        dialog.show()
-    }
 
     companion object {
 
