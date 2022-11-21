@@ -1,6 +1,5 @@
 package ca.tetervak.fireeats2
 
-import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -10,10 +9,10 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.StringRes
-import androidx.appcompat.app.AlertDialog
 import androidx.core.text.HtmlCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,11 +22,7 @@ import ca.tetervak.fireeats2.model.RestaurantAdapter
 import ca.tetervak.fireeats2.util.RatingUtil
 import ca.tetervak.fireeats2.util.RestaurantUtil
 import com.firebase.ui.auth.AuthUI
-import com.firebase.ui.auth.ErrorCodes
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.snackbar.Snackbar
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -35,7 +30,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
-class MainFragment : Fragment(),
+class MainFragment : Fragment(), MenuProvider,
         FilterDialogFragment.FilterListener,
         RestaurantAdapter.OnRestaurantSelectedListener {
 
@@ -49,7 +44,11 @@ class MainFragment : Fragment(),
     private lateinit var viewModel: MainActivityViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        setHasOptionsMenu(true)
+        // setup fragment menu
+        requireActivity().addMenuProvider(
+            this, viewLifecycleOwner, Lifecycle.State.RESUMED
+        )
+
         binding = FragmentMainBinding.inflate(inflater, container, false);
         return binding.root;
     }
@@ -116,9 +115,8 @@ class MainFragment : Fragment(),
         adapter.stopListening()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.menu_main, menu)
-        return super.onCreateOptionsMenu(menu, inflater)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.menu_main, menu)
     }
 
 
@@ -135,18 +133,20 @@ class MainFragment : Fragment(),
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menu_add_items -> onAddItemsClicked()
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_add_items -> {
+                onAddItemsClicked()
+                true
+            }
             R.id.menu_sign_out -> {
                 AuthUI.getInstance().signOut(requireContext())
                 signInProvider?.startSignIn()
+                true
             }
+            else -> false
         }
-        return super.onOptionsItemSelected(item)
     }
-
-
 
     private fun onFilterClicked() {
         // Show the dialog containing filter options
